@@ -67,6 +67,16 @@ local tests: { Test } = {
 		input = "[42 1 153 218]",
 		output = "[153 218]",
 	},
+
+	-- opcode 2
+	{
+		input = "[77 2 [1 42] [1 1 153 218]]",
+		output = "[153 218]",
+	},
+	{
+		input = "[0 2 [1 0] [1 1 55]]",
+		output = "55",
+	},
 }
 
 for i, test in tests do
@@ -76,6 +86,12 @@ for i, test in tests do
 	if input.fail then
 		print "FAIL"
 		print("stringn", input.err)
+		return
+	end
+
+	if type(input.value) ~= "table" then
+		print "FAIL"
+		print "invalid test: input is not a cell"
 		return
 	end
 

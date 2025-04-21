@@ -2,15 +2,14 @@
 type Atom = number
 
 -- A cell is an ordered pair of nouns.
-type Cell = {
-	n1: Noun,
-	n2: Noun,
-}
+type Cell<N1, N2> = { n1: Noun, n2: Noun }
 
-local function cell(n1: Noun, n2: Noun): Cell return { n1 = n1, n2 = n2 } end
+local function cell(n1: Noun, n2: Noun): Cell<Noun, Noun>
+	return { n1 = n1, n2 = n2 }
+end
 
 -- A noun is an atom or a cell.
-type Noun = Atom | Cell
+type Noun = Atom | Cell<Noun, Noun>
 
 -- useful result thing
 type Result = {
@@ -112,45 +111,50 @@ end
 
 -- operator functions
 -- /
-local function fas(i: Noun): Result
+local function fas(i: Cell<Noun, Noun>): Result
 	print(`/{nstring(i)}`)
+
+	local n1, n2 = i.n1, i.n2
 
 	if type(i) == "number" then return err "/n -> /n" end -- as far as I can tell this never happens
 
+	n1, n2 = n1 :: Noun, n2 :: Noun
 	-- /[1 a] -> a
-	if type(i) == "table" and i.n1 == 1 then
+	if n1 == 1 then
 		print "-- /[1 a] -> a"
 
-		local a = i.n2
+		local a = n2
 
 		return ok(a)
 	end
 
+	n1, n2 = n1 :: Noun, n2 :: Noun
 	-- /[2 a b] -> a
 	-- /[2 [a b]] -> a
-	if type(i) == "table" and i.n1 == 2 and type(i.n2) == "table" then
+	if n1 == 2 and type(n2) == "table" then
 		print "-- /[2 a b] -> a"
 
-		local a = i.n2.n1
+		local a = n2.n1
 
 		return ok(a)
 	end
 
+	n1, n2 = n1 :: Noun, n2 :: Noun
 	-- /[3 a b] -> b
 	-- /[3 [a b]] -> b
-	if type(i) == "table" and i.n1 == 3 and type(i.n2) == "table" then
+	if n1 == 3 and type(n2) == "table" then
 		print "-- /[3 a b] -> b"
 
-		local b = i.n2.n2
+		local b = n2.n2
 
 		return ok(b)
 	end
 
+	n1, n2 = n1 :: Noun, n2 :: Noun
 	-- /[(a + a) b] -> /[2 /[a b]]
 	-- /[(a + a + 1) b] -> /[3 /[a b]]
-	if type(i) == "table" and type(i.n1) == "number" then
-		local n1 = i.n1
-		local b = i.n2
+	if type(n1) == "number" then
+		local b = n2
 
 		if n1 == 0 then return err "/[0 a] -> /[2 /[0 a]]" end
 		if n1 == 2 and type(b) == "number" then
@@ -192,24 +196,20 @@ local function fas(i: Noun): Result
 end
 
 -- Reduce by the first matching pattern; variables match any noun.
-local function nock(i: Noun): Result
+local function nock(i: Cell<Noun, Noun>): Result
 	print(`*{nstring(i)}`)
 
-	if type(i) == "number" then return err "*n -> *n" end
+	local n1, n2 = i.n1, i.n2
 
 	-- *[a [b c] d] -> [*[a b c] *[a d]]
 	-- *[a [[b c] d]] -> [*[a [b c]] *[a d]]
-	if
-		type(i) == "table"
-		and type(i.n2) == "table"
-		and type(i.n2.n1) == "table"
-	then
+	if type(n2) == "table" and type(n2.n1) == "table" then
 		print "-- *[a [b c] d] -> [*[a b c] *[a d]]"
 
-		local a = i.n1
-		local b = i.n2.n1.n1
-		local c = i.n2.n1.n2
-		local d = i.n2.n2
+		local a = n1
+		local b = n2.n1.n1
+		local c = n2.n1.n2
+		local d = n2.n2
 
 		local r1 = nock(cell(a, cell(b, c)))
 		if r1.fail then return r1 end
@@ -220,26 +220,51 @@ local function nock(i: Noun): Result
 		return ok(cell(r1.value, r2.value))
 	end
 
-	i = i :: Noun
+	n1, n2 = n1 :: Noun, n2 :: Noun
 	-- *[a 0 b] -> /[b a]
 	-- *[a [0 b]] -> /[b a]
-	if type(i) == "table" and type(i.n2) == "table" and i.n2.n1 == 0 then
+	if type(n2) == "table" and n2.n1 == 0 then
 		print "-- *[a 0 b] -> /[b a]"
 
-		local a = i.n1
-		local b = i.n2.n2
+		local a = n1
+		local b = n2.n2
 
 		return fas(cell(b, a))
 	end
 
+	n1, n2 = n1 :: Noun, n2 :: Noun
 	-- *[a 1 b] -> b
 	-- *[a [1 b]] -> b
-	if type(i) == "table" and type(i.n2) == "table" and i.n2.n1 == 1 then
+	if type(n2) == "table" and n2.n1 == 1 then
 		print "-- *[a 1 b] -> b"
 
-		local b = i.n2.n2
+		local b = n2.n2
 
 		return ok(b)
+	end
+
+	n1, n2 = n1 :: Noun, n2 :: Noun
+	-- *[a 2 b c] -> *[*[a b] *[a c]]
+	-- *[a [2 [b c]]] -> *[*[a b] *[a c]]
+	if
+		type(i) == "table"
+		and type(n2) == "table"
+		and n2.n1 == 2
+		and type(n2.n2) == "table"
+	then
+		print "*[a 2 b c] -> *[*[a b] *[a c]]"
+
+		local a = n1
+		local b = n2.n2.n1
+		local c = n2.n2.n2
+
+		local r1 = nock(cell(a, b))
+		if r1.fail then return r1 end
+
+		local r2 = nock(cell(a, c))
+		if r2.fail then return r2 end
+
+		return nock(cell(r1.value, r2.value))
 	end
 
 	-- *a -> *a
