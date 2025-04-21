@@ -101,6 +101,24 @@ local tests: { Test } = {
 		input = "[0 4 [1 [5 5]]]",
 		err = "+[a b] -> +[a b]",
 	},
+
+	-- opcode 5
+	{
+		input = "[77 5 [1 9] [1 9]]",
+		output = "0",
+	},
+	{
+		input = "[77 5 [1 8] [1 9]]",
+		output = "1",
+	},
+	{
+		input = "[77 5 [1 8] [1 [8 8]]]",
+		output = "1",
+	},
+	{
+		input = "[77 5 [1 [8 8]] [1 [8 8]]]",
+		output = "0",
+	},
 }
 
 for i, test in tests do

@@ -114,6 +114,8 @@ end
 -- operator functions
 -- ?
 local function wut(n: Noun): Atom
+	print(`?{nstring(n)}`)
+
 	-- ?[a b] -> 0
 	if type(n) == "table" then return 0 end
 
@@ -123,11 +125,36 @@ end
 
 -- +
 local function lus(n: Noun): Result
+	print(`+{nstring(n)}`)
+
 	-- +a -> 1 + a
 	if type(n) == "number" then return ok(1 + n) end
 
 	-- +[a b] -> +[a b]
 	return err "+[a b] -> +[a b]"
+end
+
+-- =
+local function btis(a: Noun, b: Noun): boolean
+	if type(a) == "number" and type(b) == "number" and a == b then
+		return true
+	end
+
+	if type(a) == "table" and type(b) == "table" then
+		return btis(a.n1, b.n1) and btis(a.n2, b.n2)
+	end
+
+	return false
+end
+
+local function tis(a: Noun, b: Noun): Atom
+	print(`=[{nstring(a)} {nstring(b)}]`)
+
+	-- =[a a] -> 0
+	if btis(a, b) then return 0 end
+
+	-- =[a b] -> 1
+	return 1
 end
 
 -- /
@@ -255,7 +282,7 @@ local function nock(n1: Noun, n2: Noun): Result
 	-- *[a 2 b c] -> *[*[a b] *[a c]]
 	-- *[a [2 [b c]]] -> *[*[a b] *[a c]]
 	if type(n2) == "table" and n2.n1 == 2 and type(n2.n2) == "table" then
-		print "*[a 2 b c] -> *[*[a b] *[a c]]"
+		print "-- *[a 2 b c] -> *[*[a b] *[a c]]"
 
 		local a = n1
 		local b = n2.n2.n1
@@ -273,6 +300,8 @@ local function nock(n1: Noun, n2: Noun): Result
 	-- *[a 3 b] -> ?*[a b]
 	-- *[a [3 b]] -> ?*[a b]
 	if type(n2) == "table" and n2.n1 == 3 then
+		print "-- *[a 3 b] -> ?*[a b]"
+
 		local a = n1
 		local b = n2.n2
 
@@ -285,6 +314,8 @@ local function nock(n1: Noun, n2: Noun): Result
 	-- *[a 4 b] -> +*[a b]
 	-- *[a [4 b]] -> +*[a b]
 	if type(n2) == "table" and n2.n1 == 4 then
+		print "-- *[a 4 b] -> +*[a b]"
+
 		local a = n1
 		local b = n2.n2
 
@@ -292,6 +323,24 @@ local function nock(n1: Noun, n2: Noun): Result
 		if r1.fail then return r1 end
 
 		return lus(r1.value)
+	end
+
+	-- *[a 5 b c] -> =[*[a b] *[a c]]
+	-- *[a [5 [b c]]] -> =[*[a b] *[a c]]
+	if type(n2) == "table" and n2.n1 == 5 and type(n2.n2) == "table" then
+		print "-- *[a 5 b c] -> =[*[a b] *[a c]]"
+
+		local a = n1
+		local b = n2.n2.n1
+		local c = n2.n2.n2
+
+		local r1 = nock(a, b)
+		if r1.fail then return r1 end
+
+		local r2 = nock(a, c)
+		if r2.fail then return r2 end
+
+		return ok(tis(r1.value, r2.value))
 	end
 
 	-- *a -> *a
