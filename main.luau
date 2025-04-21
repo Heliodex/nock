@@ -2,14 +2,12 @@
 type Atom = number
 
 -- A cell is an ordered pair of nouns.
-type Cell<N1, N2> = { n1: N1, n2: N2 }
+type Cell = { n1: Noun, n2: Noun }
 
-local function cell<N1, N2>(n1: N1, n2: N2): Cell<N1, N2>
-	return { n1 = n1, n2 = n2 }
-end
+local function cell(n1: Noun, n2: Noun): Cell return { n1 = n1, n2 = n2 } end
 
 -- A noun is an atom or a cell.
-type Noun = Atom | Cell<Noun, Noun>
+type Noun = Atom | Cell
 
 -- useful result thing
 type Result = {
@@ -341,6 +339,35 @@ local function nock(n1: Noun, n2: Noun): Result
 		if r2.fail then return r2 end
 
 		return ok(tis(r1.value, r2.value))
+	end
+
+	-- macro time
+
+	-- *[a 6 b c d] -> *[a *[[c d] 0 *[[2 3] 0 *[a 4 4 b]]]]
+	-- *[a [6 [b [c d]]]] -> *[a *[[c d] [0 *[[2 3] [0 *[a [4 [4 b]]]]]]]]
+	if
+		type(n2) == "table"
+		and n2.n1 == 6
+		and type(n2.n2) == "table"
+		and type(n2.n2.n2) == "table"
+	then
+		print "-- *[a 6 b c d] -> *[a *[[c d] 0 *[[2 3] 0 *[a 4 4 b]]]]"
+
+		local a = n1
+		local b = n2.n2.n1
+		local c = n2.n2.n2.n1
+		local d = n2.n2.n2.n2
+
+		local r1 = nock(a, cell(4, cell(4, b)))
+		if r1.fail then return r1 end
+
+		local r2 = nock(cell(2, 3), cell(0, r1.value))
+		if r2.fail then return r2 end
+
+		local r3 = nock(cell(c, d), cell(0, r2.value))
+		if r3.fail then return r3 end
+
+		return nock(a, r3.value)
 	end
 
 	-- *a -> *a

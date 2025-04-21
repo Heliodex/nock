@@ -119,6 +119,28 @@ local tests: { Test } = {
 		input = "[77 5 [1 [8 8]] [1 [8 8]]]",
 		output = "0",
 	},
+	
+	-- opcode 6
+	{
+		input = "[42 6 [1 0] [4 0 1] [1 233]]",
+		output = "43",
+	},
+	{
+		input = "[42 6 [1 1] [4 0 1] [1 233]]",
+		output = "233",
+	},
+	{
+		input = "[42 6 [1 0] [1 232] [1 233]]",
+		output = "232",
+	},
+	{
+		input = "[42 6 [1 1] [1 232] [1 233]]",
+		output = "233",
+	},
+	{
+		input = "[42 6 [1 2] [1 232] [1 233]]",
+		err = "/[2 n] -> /[2 /[1 n]] -> /[2 n]",
+	},
 }
 
 for i, test in tests do
@@ -143,7 +165,7 @@ for i, test in tests do
 		if test.err ~= res.err then
 			print "FAIL"
 			print("expected", test.err)
-			print("got", res.err)
+			print("got     ", res.err)
 			return
 		end
 	elseif not res.fail and test.output then
@@ -152,7 +174,7 @@ for i, test in tests do
 		if test.output ~= out then
 			print "FAIL"
 			print("expected", test.output)
-			print("got", out)
+			print("got     ", out)
 			return
 		end
 	else
@@ -160,10 +182,10 @@ for i, test in tests do
 
 		if test.output and res.fail then
 			print("expected output", test.output)
-			print("got failure", res.err)
+			print("got failure    ", res.err)
 		elseif test.err and not res.fail then
 			print("expected failure", test.err)
-			print("got output", res.value)
+			print("got output      ", res.value)
 		else
 			print "invalid test"
 		end
