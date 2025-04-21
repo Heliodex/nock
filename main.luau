@@ -402,6 +402,23 @@ local function nock(n1: Noun, n2: Noun): Result
 		return nock(cell(r1.value, a), c)
 	end
 
+	-- *[a 9 b c] -> *[*[a c] 2 [0 1] 0 b]
+	-- *[a [9 [b c]]] -> *[*[a c] [2 [[0 1] [0 b]]]]
+	-- 
+	-- (alternatively *[a 7 c 2 [0 1] 0 b] -> *[*[a c] 2 [0 1] 0 b])
+	if type(n2) == "table" and n2.n1 == 8 and type(n2.n2) == "table" then
+		print "-- *[a 9 b c] -> *[*[a c] 2 [0 1] 0 b]"
+
+		local a = n1
+		local b = n2.n2.n1
+		local c = n2.n2.n2
+
+		local r1 = nock(a, c)
+		if r1.fail then return r1 end
+
+		return nock(r1.value, cell(2, cell(cell(0, 1), cell(0, b))))
+	end
+
 	-- *a -> *a
 	return err "*a -> *a"
 end
