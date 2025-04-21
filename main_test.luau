@@ -89,13 +89,14 @@ for i, test in tests do
 		return
 	end
 
-	if type(input.value) ~= "table" then
+	local v = input.value
+	if type(v) ~= "table" then
 		print "FAIL"
 		print "invalid test: input is not a cell"
 		return
 	end
 
-	local res = nock(input.value)
+	local res = nock(v.n1, v.n2)
 	if res.fail and test.err then
 		if test.err ~= res.err then
 			print "FAIL"
