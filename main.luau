@@ -370,6 +370,23 @@ local function nock(n1: Noun, n2: Noun): Result
 		return nock(a, r3.value)
 	end
 
+	-- *[a 7 b c] -> *[*[a b] c]
+	-- *[a [7 [b c]]] -> *[*[a b] c]
+	--
+	-- (alternatively *[a 2 b 1 c] -> [*[a b] *[a 1 c]] -> *[*[a b] c])
+	if type(n2) == "table" and n2.n1 == 7 and type(n2.n2) == "table" then
+		print "-- *[a 7 b c] -> *[*[a b] c]"
+
+		local a = n1
+		local b = n2.n2.n1
+		local c = n2.n2.n2
+
+		local r1 = nock(a, b)
+		if r1.fail then return r1 end
+
+		return nock(r1.value, c)
+	end
+
 	-- *a -> *a
 	return err "*a -> *a"
 end
