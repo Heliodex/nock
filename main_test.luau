@@ -11,6 +11,12 @@ type Test = {
 }
 
 local tests: { Test } = {
+	-- distribution
+	{
+		input = "[[[1 2] [3 4]] [[0 3] [4 0 5]]]",
+		output = "[[3 4] 3]",
+	},
+
 	-- opcode 0
 	{
 		input = "[[[4 5] [6 14 15]] 0 1]",
@@ -52,6 +58,10 @@ local tests: { Test } = {
 		input = "[[[4 5] [6 14 15]] 0 15]",
 		output = "15",
 	},
+	{
+		input = "[[50 51] [0 [0 1]]]",
+		err = "/a -> /a",
+	},
 
 	-- opcode 1
 	{
@@ -62,10 +72,17 @@ local tests: { Test } = {
 		input = "[999 1 0]",
 		output = "0",
 	},
-
 	{
 		input = "[42 1 153 218]",
 		output = "[153 218]",
+	},
+	{
+		input = "[[[1 2] [3 4]] [1 7]]",
+		output = "7",
+	},
+	{
+		input = "[[[1 2] [3 4]] [1 [7 8 9]]]",
+		output = "[7 [8 9]]",
 	},
 
 	-- opcode 2
@@ -77,6 +94,10 @@ local tests: { Test } = {
 		input = "[0 2 [1 0] [1 1 55]]",
 		output = "55",
 	},
+	{
+		input = "[[1 2] [2 [0 2] [1 [0 1]]]]",
+		output = "1",
+	},
 
 	-- opcode 3
 	{
@@ -85,6 +106,14 @@ local tests: { Test } = {
 	},
 	{
 		input = "[0 3 [1 56]]",
+		output = "1",
+	},
+	{
+		input = "[[[1 2] [3 4]] [3 0 1]]",
+		output = "0",
+	},
+	{
+		input = "[[[1 2] [3 4]] [3 0 4]]",
 		output = "1",
 	},
 
@@ -106,6 +135,10 @@ local tests: { Test } = {
 		output = "57",
 	},
 	{
+		input = "[5 4 [3 0 1]]",
+		output = "2",
+	},
+	{
 		input = "[0 4 [1 [5 5]]]",
 		err = "+[a b] -> +[a b]",
 	},
@@ -125,6 +158,18 @@ local tests: { Test } = {
 	},
 	{
 		input = "[77 5 [1 [8 8]] [1 [8 8]]]",
+		output = "0",
+	},
+	{
+		input = "[[[1 2] [1 2]] [5 [0 2] [0 3]]]",
+		output = "0",
+	},
+	{
+		input = "[[[1 2] [3 4]] [5 [0 2] [0 3]]]",
+		output = "1",
+	},
+	{
+		input = "[[[1 2] [99 99]] [5 [0 5] [4 0 4]]]",
 		output = "0",
 	},
 
@@ -171,12 +216,42 @@ local tests: { Test } = {
 	-- opcode 8
 	{
 		input = "[42 8 [4 0 1] [0 1]]",
-		output="[43 42]"
+		output = "[43 42]",
 	},
 	{
 		input = "[42 8 [4 0 1] [4 0 3]]",
-		output="43"
+		output = "43",
 	},
+
+	-- opcode 10
+	-- {
+	-- 	input = "[0 10 [5 [0 1]] [0 1]]",
+	-- 	output = "43",
+	-- },
+
+	-- other
+	{
+		input = "[42 [1 0] [0 1]]",
+		output = "[0 42]",
+	},
+	{
+		input = "[42 2 [[1 0] [0 1]] [1 [0 1]]]",
+		output = "[0 42]",
+	},
+	{
+		input = "[42 7 [[1 0] [0 1]] [0 1]]",
+		output = "[0 42]",
+	},
+	{
+		input = "[42 8 [1 0] [0 1]]",
+		output = "[0 42]",
+	},
+
+	-- holy grail
+	{
+		input = "[1 8 [1 0] [8 [1 6 [5 [0 7] 4 0 6] [0 6] 9 2 [0 2] [4 0 6] 0 7] 9 2 0 1]]",
+		output = "0",
+	}, -- i tried this with s = 0, and it crashed. my entire. ship.
 }
 
 for i, test in tests do

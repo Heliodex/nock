@@ -1,3 +1,5 @@
+-- Nock 4K
+
 -- An atom is a natural number.
 type Atom = number
 
@@ -124,6 +126,7 @@ end
 -- +
 local function lus(n: Noun): Result
 	print(`+{nstring(n)}`)
+	-- error "waht"
 
 	-- +a -> 1 + a
 	if type(n) == "number" then return ok(1 + n) end
@@ -206,7 +209,7 @@ local function fas(n1: Noun, n2: Noun): Result
 			print "-- /[(a + a) b] -> /[2 /[a b]]"
 
 			local a = n1 / 2
-			print(`== /[{n1} b] -> /[2 /[{a} b]]`)
+			print(`== /[{n1} {nstring(b)}] -> /[2 /[{a} {nstring(b)}]]`)
 
 			local r2 = fas(a, b)
 			if r2.fail then return r2 end
@@ -229,7 +232,50 @@ local function fas(n1: Noun, n2: Noun): Result
 	end
 
 	-- /a -> /a
-	return err "/a -> /a" -- as far as I can tell this never happens
+	return err "/a -> /a"
+end
+
+local function hax(n1: Noun, n2: Noun, n3: Noun): Result
+	-- #[1 a b] -> a
+	if n1 == 1 then
+		print "-- #[1 a b] -> a"
+
+		local a = n2
+
+		return ok(a)
+	end
+
+	local b = n2
+	local c = n3
+
+	if type(n1) == "number" then
+		-- #[(a + a) b c] -> #[a [b /[(a + a + 1) c]] c]
+		if n1 % 2 == 0 then
+			print "-- #[(a + a) b c] -> #[a [b /[(a + a + 1) c]] c]"
+
+			local a = n1 / 2
+
+			local r2 = fas(a + a + 1, c)
+			if r2.fail then return r2 end
+
+			return hax(a, cell(r2.value, b), c)
+		end
+
+		-- #[(a + a + 1) b c] -> #[a [/[(a + a) c] b] c]
+		if n1 % 2 == 1 then
+			print "-- #[(a + a + 1) b c] -> #[a [/[(a + a) c] b] c]"
+
+			local a = (n1 - 1) / 2
+
+			local r2 = fas(a + a, c)
+			if r2.fail then return r2 end
+
+			return hax(a, cell(b, r2.value), c)
+		end
+	end
+
+	-- #a -> #a
+	return err "#a -> #a"
 end
 
 -- Reduce by the first matching pattern; variables match any noun.
@@ -246,6 +292,12 @@ local function nock(n1: Noun, n2: Noun): Result
 		local b = n2.n1.n1
 		local c = n2.n1.n2
 		local d = n2.n2
+
+		print(
+			`== *[{nstring(a)} [{nstring(b)} {nstring(c)}] {nstring(d)}] -> [*[{nstring(
+				a
+			)} {nstring(b)} {nstring(c)}] *[{nstring(a)} {nstring(d)}]]`
+		)
 
 		local r1 = nock(a, cell(b, c))
 		if r1.fail then return r1 end
@@ -285,6 +337,12 @@ local function nock(n1: Noun, n2: Noun): Result
 		local a = n1
 		local b = n2.n2.n1
 		local c = n2.n2.n2
+
+		print(
+			`== *[{nstring(a)} 2 {nstring(b)} {nstring(c)}] -> *[*[{nstring(a)} {nstring(
+				b
+			)}] *[{nstring(a)} {nstring(c)}]]`
+		)
 
 		local r1 = nock(a, b)
 		if r1.fail then return r1 end
@@ -396,6 +454,12 @@ local function nock(n1: Noun, n2: Noun): Result
 		local b = n2.n2.n1
 		local c = n2.n2.n2
 
+		print(
+			`== *[{nstring(a)} 8 {nstring(b)} {nstring(c)}] -> *[[*[{nstring(a)} {nstring(
+				b
+			)}] {nstring(a)}] {nstring(c)}]`
+		)
+
 		local r1 = nock(a, b)
 		if r1.fail then return r1 end
 
@@ -404,19 +468,55 @@ local function nock(n1: Noun, n2: Noun): Result
 
 	-- *[a 9 b c] -> *[*[a c] 2 [0 1] 0 b]
 	-- *[a [9 [b c]]] -> *[*[a c] [2 [[0 1] [0 b]]]]
-	-- 
+	--
 	-- (alternatively *[a 7 c 2 [0 1] 0 b] -> *[*[a c] 2 [0 1] 0 b])
-	if type(n2) == "table" and n2.n1 == 8 and type(n2.n2) == "table" then
+	if type(n2) == "table" and n2.n1 == 9 and type(n2.n2) == "table" then
 		print "-- *[a 9 b c] -> *[*[a c] 2 [0 1] 0 b]"
 
 		local a = n1
 		local b = n2.n2.n1
 		local c = n2.n2.n2
 
+		print(
+			`== *[{nstring(a)} 9 {nstring(b)} {nstring(c)}] -> *[*[{nstring(a)} {nstring(
+				c
+			)}] 2 [0 1] 0 {nstring(b)}]`
+		)
+
 		local r1 = nock(a, c)
 		if r1.fail then return r1 end
 
 		return nock(r1.value, cell(2, cell(cell(0, 1), cell(0, b))))
+	end
+
+	-- *[a 10 [b c] d] -> #[b *[a c] *[a d]]
+	-- *[a [10 [[b c] d]]] -> #[b [*[a c] *[a d]]]
+	if
+		type(n2) == "table"
+		and n2.n1 == 10
+		and type(n2.n2) == "table"
+		and type(n2.n2.n1) == "table"
+	then
+		print "-- *[a 10 [b c] d] -> #[b *[a c] *[a d]]"
+
+		local a = n1
+		local b = n2.n2.n1.n1
+		local c = n2.n2.n1.n2
+		local d = n2.n2.n2
+
+		print(
+			`== *[{nstring(a)} 10 [{nstring(b)} {nstring(c)}] {nstring(d)}] -> #[{nstring(
+				b
+			)} *[{nstring(a)} {nstring(c)}] *[{nstring(a)} {nstring(d)}]]`
+		)
+
+		local r1 = nock(a, c)
+		if r1.fail then return r1 end
+
+		local r2 = nock(a, d)
+		if r2.fail then return r2 end
+
+		return hax(b, r1.value, r2.value)
 	end
 
 	-- *a -> *a
