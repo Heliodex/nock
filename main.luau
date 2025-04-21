@@ -37,7 +37,7 @@ end
 
 local function stringn(s: string): Result
 	local n = tonumber(s)
-	if n then return ok(n) end
+	if n and n >= 0 and math.floor(n) == n then return ok(n) end
 
 	-- [a b] -> cell(a, b)
 	local chars = string.split(s, "")
@@ -152,9 +152,7 @@ local function fas(i: Noun): Result
 		local n1 = i.n1
 		local b = i.n2
 
-		if n1 == 0 then
-			return err "/[0 a] -> /[2 /[0 a]]"
-		end
+		if n1 == 0 then return err "/[0 a] -> /[2 /[0 a]]" end
 		if n1 == 2 and type(b) == "number" then
 			return err "/[2 n] -> /[2 /[1 n]] -> /[2 n]"
 		end
@@ -222,6 +220,7 @@ local function nock(i: Noun): Result
 		return ok(cell(r1.value, r2.value))
 	end
 
+	i = i :: Noun
 	-- *[a 0 b] -> /[b a]
 	-- *[a [0 b]] -> /[b a]
 	if type(i) == "table" and type(i.n2) == "table" and i.n2.n1 == 0 then
@@ -233,24 +232,22 @@ local function nock(i: Noun): Result
 		return fas(cell(b, a))
 	end
 
+	-- *[a 1 b] -> b
+	-- *[a [1 b]] -> b
+	if type(i) == "table" and type(i.n2) == "table" and i.n2.n1 == 1 then
+		print "-- *[a 1 b] -> b"
+
+		local b = i.n2.n2
+
+		return ok(b)
+	end
+
 	-- *a -> *a
 	return err "*a -> *a"
 end
 
-local i = stringn "[[[4 5] [6 14 15]] 0 15]"
-if i.fail then
-	print("stringn fail", i.err)
-	return
-end
-
--- /[3 n]
---/[(a + a + 1) b] -> /[3 /[a b]]
--- /[3 /[1 n]] 
-
-local out = nock(i.value)
-if out.fail then
-	print("FAIL", out.err)
-	return
-end
-
-print(nstring(out.value))
+return {
+	nstring = nstring,
+	stringn = stringn,
+	nock = nock,
+}
