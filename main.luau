@@ -222,7 +222,7 @@ local function fas(n1: Noun, n2: Noun): Result
 			print "-- /[(a + a + 1) b] -> /[3 /[a b]]"
 
 			local a = (n1 - 1) / 2
-			print(`== /[{n1} b] -> /[3 /[{a} b]]`)
+			print(`== /[{n1} {nstring(b)}] -> /[3 /[{a} {nstring(b)}]]`)
 
 			local r2 = fas(a, b)
 			if r2.fail then return r2 end
@@ -517,6 +517,47 @@ local function nock(n1: Noun, n2: Noun): Result
 		if r2.fail then return r2 end
 
 		return hax(b, r1.value, r2.value)
+	end
+
+	-- *[a 11 [b c] d] -> *[[*[a c] *[a d]] 0 3]
+	-- *[a [11 [[b c] d]]] -> *[[*[a c] *[a d]] [0 3]]
+	if
+		type(n2) == "table"
+		and n2.n1 == 11
+		and type(n2.n2) == "table"
+		and type(n2.n2.n1) == "table"
+	then
+		print "-- *[a 11 [b c] d] -> *[[*[a c] *[a d]] 0 3]"
+
+		local a = n1
+		local b = n2.n2.n1.n1
+		local c = n2.n2.n1.n2
+		local d = n2.n2.n2
+
+		print(`== *[{nstring(a)} 11 [{nstring(b)} {nstring(c)}] {nstring(d)}] -> *[[*[{nstring(a)} {nstring(c)}] *[{nstring(a)} {nstring(d)}]] 0 3]`)
+
+		local r1 = nock(a, c)
+		if r1.fail then return r1 end
+
+		local r2 = nock(a, d)
+		if r2.fail then return r2 end
+
+
+		return nock(cell(r1.value, r2.value), cell(0, 3))
+	end
+
+	-- *[a 11 b c] -> *[a c]
+	-- *[a [11 [b c]]] -> *[a c]
+	if type(n2) == "table" and n2.n1 == 11 and type(n2.n2) == "table" then
+		print "-- *[a 11 b c] -> *[a c]"
+
+		local a = n1
+		local b = n2.n2.n1
+		local c = n2.n2.n2
+
+		print(`== *[{nstring(a)} 11 {nstring(b)} {nstring(c)}] -> *[{nstring(a)} {nstring(c)}]`)
+
+		return nock(a, c)
 	end
 
 	-- *a -> *a
