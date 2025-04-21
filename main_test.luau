@@ -87,6 +87,20 @@ local tests: { Test } = {
 		input = "[0 3 [1 56]]",
 		output = "1",
 	},
+
+	-- opcode 4
+	{
+		input = "[0 4 [1 2]]",
+		output = "3",
+	},
+	{
+		input = "[0 4 [1 56]]",
+		output = "57",
+	},
+	{
+		input = "[0 4 [1 [5 5]]]",
+		err = "+[a b] -> +[a b]",
+	},
 }
 
 for i, test in tests do
@@ -138,6 +152,6 @@ for i, test in tests do
 		return
 	end
 
-	print(test.output)
+	print(test.output or test.err)
 	print "PASS\n"
 end

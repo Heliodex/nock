@@ -22,6 +22,7 @@ type Result = {
 
 local function ok(value: Noun): Result return { fail = false, value = value } end
 
+-- Represents logical bottom states
 local function err(e: string): Result return { fail = true, err = e } end
 
 -- stringification baby
@@ -113,8 +114,20 @@ end
 -- operator functions
 -- ?
 local function wut(n: Noun): Atom
+	-- ?[a b] -> 0
 	if type(n) == "table" then return 0 end
+
+	-- ?a -> 1
 	return 1
+end
+
+-- +
+local function lus(n: Noun): Result
+	-- +a -> 1 + a
+	if type(n) == "number" then return ok(1 + n) end
+
+	-- +[a b] -> +[a b]
+	return err "+[a b] -> +[a b]"
 end
 
 -- /
@@ -267,6 +280,18 @@ local function nock(n1: Noun, n2: Noun): Result
 		if r1.fail then return r1 end
 
 		return ok(wut(r1.value))
+	end
+
+	-- *[a 4 b] -> +*[a b]
+	-- *[a [4 b]] -> +*[a b]
+	if type(n2) == "table" and n2.n1 == 4 then
+		local a = n1
+		local b = n2.n2
+
+		local r1 = nock(a, b)
+		if r1.fail then return r1 end
+
+		return lus(r1.value)
 	end
 
 	-- *a -> *a
