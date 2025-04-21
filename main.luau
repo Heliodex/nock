@@ -34,6 +34,7 @@ local function nstring(n: Noun): string
 	return `?{type(n)}?`
 end
 
+-- [a b c] -> [a [b c]]
 local function stringn(s: string): Result
 	local n = tonumber(s)
 	if n and n >= 0 and math.floor(n) == n then return ok(n) end
@@ -110,6 +111,12 @@ local function stringn(s: string): Result
 end
 
 -- operator functions
+-- ?
+local function wut(n: Noun): Atom
+	if type(n) == "table" then return 0 end
+	return 1
+end
+
 -- /
 local function fas(n1: Noun, n2: Noun): Result
 	print(`/[{nstring(n1)} {nstring(n2)}]`)
@@ -188,6 +195,7 @@ local function fas(n1: Noun, n2: Noun): Result
 end
 
 -- Reduce by the first matching pattern; variables match any noun.
+-- nock(a) -> *a
 local function nock(n1: Noun, n2: Noun): Result
 	print(`*[{nstring(n1)} {nstring(n2)}]`)
 
@@ -247,6 +255,18 @@ local function nock(n1: Noun, n2: Noun): Result
 		if r2.fail then return r2 end
 
 		return nock(r1.value, r2.value)
+	end
+
+	-- *[a 3 b] -> ?*[a b]
+	-- *[a [3 b]] -> ?*[a b]
+	if type(n2) == "table" and n2.n1 == 3 then
+		local a = n1
+		local b = n2.n2
+
+		local r1 = nock(a, b)
+		if r1.fail then return r1 end
+
+		return ok(wut(r1.value))
 	end
 
 	-- *a -> *a

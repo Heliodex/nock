@@ -77,6 +77,16 @@ local tests: { Test } = {
 		input = "[0 2 [1 0] [1 1 55]]",
 		output = "55",
 	},
+
+	-- opcode 3
+	{
+		input = "[0 3 [1 [1 2]]]",
+		output = "0",
+	},
+	{
+		input = "[0 3 [1 56]]",
+		output = "1",
+	},
 }
 
 for i, test in tests do
