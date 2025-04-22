@@ -1,5 +1,11 @@
 -- Nock 4K
 
+local debug = false
+
+local function dprint(n: string)
+	if debug then print(n) end
+end
+
 -- An atom is a natural number.
 type Atom = number
 
@@ -114,7 +120,7 @@ end
 -- operator functions
 -- ?
 local function wut(n: Noun): Atom
-	print(`?{nstring(n)}`)
+	dprint(`?{nstring(n)}`)
 
 	-- ?[a b] -> 0
 	if type(n) == "table" then return 0 end
@@ -125,7 +131,7 @@ end
 
 -- +
 local function lus(n: Noun): Result
-	print(`+{nstring(n)}`)
+	dprint(`+{nstring(n)}`)
 	-- error "waht"
 
 	-- +a -> 1 + a
@@ -149,7 +155,7 @@ local function btis(a: Noun, b: Noun): boolean
 end
 
 local function tis(a: Noun, b: Noun): Atom
-	print(`=[{nstring(a)} {nstring(b)}]`)
+	dprint(`=[{nstring(a)} {nstring(b)}]`)
 
 	-- =[a a] -> 0
 	if btis(a, b) then return 0 end
@@ -160,11 +166,11 @@ end
 
 -- /
 local function fas(n1: Noun, n2: Noun): Result
-	print(`/[{nstring(n1)} {nstring(n2)}]`)
+	dprint(`/[{nstring(n1)} {nstring(n2)}]`)
 
 	-- /[1 a] -> a
 	if n1 == 1 then
-		print "-- /[1 a] -> a"
+		dprint "-- /[1 a] -> a"
 
 		local a = n2
 
@@ -174,7 +180,7 @@ local function fas(n1: Noun, n2: Noun): Result
 	-- /[2 a b] -> a
 	-- /[2 [a b]] -> a
 	if n1 == 2 and type(n2) == "table" then
-		print "-- /[2 a b] -> a"
+		dprint "-- /[2 a b] -> a"
 
 		local a = n2.n1
 
@@ -184,7 +190,7 @@ local function fas(n1: Noun, n2: Noun): Result
 	-- /[3 a b] -> b
 	-- /[3 [a b]] -> b
 	if n1 == 3 and type(n2) == "table" then
-		print "-- /[3 a b] -> b"
+		dprint "-- /[3 a b] -> b"
 
 		local b = n2.n2
 
@@ -206,10 +212,10 @@ local function fas(n1: Noun, n2: Noun): Result
 
 		-- /[(a + a) b] -> /[2 /[a b]]
 		if n1 % 2 == 0 then
-			print "-- /[(a + a) b] -> /[2 /[a b]]"
+			dprint "-- /[(a + a) b] -> /[2 /[a b]]"
 
 			local a = n1 / 2
-			print(`== /[{n1} {nstring(b)}] -> /[2 /[{a} {nstring(b)}]]`)
+			dprint(`== /[{n1} {nstring(b)}] -> /[2 /[{a} {nstring(b)}]]`)
 
 			local r2 = fas(a, b)
 			if r2.fail then return r2 end
@@ -219,10 +225,10 @@ local function fas(n1: Noun, n2: Noun): Result
 
 		-- /[(a + a + 1) b] -> /[3 /[a b]]
 		if n1 % 2 == 1 then
-			print "-- /[(a + a + 1) b] -> /[3 /[a b]]"
+			dprint "-- /[(a + a + 1) b] -> /[3 /[a b]]"
 
 			local a = (n1 - 1) / 2
-			print(`== /[{n1} {nstring(b)}] -> /[3 /[{a} {nstring(b)}]]`)
+			dprint(`== /[{n1} {nstring(b)}] -> /[3 /[{a} {nstring(b)}]]`)
 
 			local r2 = fas(a, b)
 			if r2.fail then return r2 end
@@ -238,7 +244,7 @@ end
 local function hax(n1: Noun, n2: Noun, n3: Noun): Result
 	-- #[1 a b] -> a
 	if n1 == 1 then
-		print "-- #[1 a b] -> a"
+		dprint "-- #[1 a b] -> a"
 
 		local a = n2
 
@@ -251,7 +257,7 @@ local function hax(n1: Noun, n2: Noun, n3: Noun): Result
 	if type(n1) == "number" then
 		-- #[(a + a) b c] -> #[a [b /[(a + a + 1) c]] c]
 		if n1 % 2 == 0 then
-			print "-- #[(a + a) b c] -> #[a [b /[(a + a + 1) c]] c]"
+			dprint "-- #[(a + a) b c] -> #[a [b /[(a + a + 1) c]] c]"
 
 			local a = n1 / 2
 
@@ -263,7 +269,7 @@ local function hax(n1: Noun, n2: Noun, n3: Noun): Result
 
 		-- #[(a + a + 1) b c] -> #[a [/[(a + a) c] b] c]
 		if n1 % 2 == 1 then
-			print "-- #[(a + a + 1) b c] -> #[a [/[(a + a) c] b] c]"
+			dprint "-- #[(a + a + 1) b c] -> #[a [/[(a + a) c] b] c]"
 
 			local a = (n1 - 1) / 2
 
@@ -281,19 +287,19 @@ end
 -- Reduce by the first matching pattern; variables match any noun.
 -- nock(a) -> *a
 local function nock(n1: Noun, n2: Noun): Result
-	print(`*[{nstring(n1)} {nstring(n2)}]`)
+	dprint(`*[{nstring(n1)} {nstring(n2)}]`)
 
 	-- *[a [b c] d] -> [*[a b c] *[a d]]
 	-- *[a [[b c] d]] -> [*[a [b c]] *[a d]]
 	if type(n2) == "table" and type(n2.n1) == "table" then
-		print "-- *[a [b c] d] -> [*[a b c] *[a d]]"
+		dprint "-- *[a [b c] d] -> [*[a b c] *[a d]]"
 
 		local a = n1
 		local b = n2.n1.n1
 		local c = n2.n1.n2
 		local d = n2.n2
 
-		print(
+		dprint(
 			`== *[{nstring(a)} [{nstring(b)} {nstring(c)}] {nstring(d)}] -> [*[{nstring(
 				a
 			)} {nstring(b)} {nstring(c)}] *[{nstring(a)} {nstring(d)}]]`
@@ -311,7 +317,7 @@ local function nock(n1: Noun, n2: Noun): Result
 	-- *[a 0 b] -> /[b a]
 	-- *[a [0 b]] -> /[b a]
 	if type(n2) == "table" and n2.n1 == 0 then
-		print "-- *[a 0 b] -> /[b a]"
+		dprint "-- *[a 0 b] -> /[b a]"
 
 		local a = n1
 		local b = n2.n2
@@ -322,7 +328,7 @@ local function nock(n1: Noun, n2: Noun): Result
 	-- *[a 1 b] -> b
 	-- *[a [1 b]] -> b
 	if type(n2) == "table" and n2.n1 == 1 then
-		print "-- *[a 1 b] -> b"
+		dprint "-- *[a 1 b] -> b"
 
 		local b = n2.n2
 
@@ -332,13 +338,13 @@ local function nock(n1: Noun, n2: Noun): Result
 	-- *[a 2 b c] -> *[*[a b] *[a c]]
 	-- *[a [2 [b c]]] -> *[*[a b] *[a c]]
 	if type(n2) == "table" and n2.n1 == 2 and type(n2.n2) == "table" then
-		print "-- *[a 2 b c] -> *[*[a b] *[a c]]"
+		dprint "-- *[a 2 b c] -> *[*[a b] *[a c]]"
 
 		local a = n1
 		local b = n2.n2.n1
 		local c = n2.n2.n2
 
-		print(
+		dprint(
 			`== *[{nstring(a)} 2 {nstring(b)} {nstring(c)}] -> *[*[{nstring(a)} {nstring(
 				b
 			)}] *[{nstring(a)} {nstring(c)}]]`
@@ -356,7 +362,7 @@ local function nock(n1: Noun, n2: Noun): Result
 	-- *[a 3 b] -> ?*[a b]
 	-- *[a [3 b]] -> ?*[a b]
 	if type(n2) == "table" and n2.n1 == 3 then
-		print "-- *[a 3 b] -> ?*[a b]"
+		dprint "-- *[a 3 b] -> ?*[a b]"
 
 		local a = n1
 		local b = n2.n2
@@ -370,7 +376,7 @@ local function nock(n1: Noun, n2: Noun): Result
 	-- *[a 4 b] -> +*[a b]
 	-- *[a [4 b]] -> +*[a b]
 	if type(n2) == "table" and n2.n1 == 4 then
-		print "-- *[a 4 b] -> +*[a b]"
+		dprint "-- *[a 4 b] -> +*[a b]"
 
 		local a = n1
 		local b = n2.n2
@@ -384,7 +390,7 @@ local function nock(n1: Noun, n2: Noun): Result
 	-- *[a 5 b c] -> =[*[a b] *[a c]]
 	-- *[a [5 [b c]]] -> =[*[a b] *[a c]]
 	if type(n2) == "table" and n2.n1 == 5 and type(n2.n2) == "table" then
-		print "-- *[a 5 b c] -> =[*[a b] *[a c]]"
+		dprint "-- *[a 5 b c] -> =[*[a b] *[a c]]"
 
 		local a = n1
 		local b = n2.n2.n1
@@ -409,7 +415,7 @@ local function nock(n1: Noun, n2: Noun): Result
 		and type(n2.n2) == "table"
 		and type(n2.n2.n2) == "table"
 	then
-		print "-- *[a 6 b c d] -> *[a *[[c d] 0 *[[2 3] 0 *[a 4 4 b]]]]"
+		dprint "-- *[a 6 b c d] -> *[a *[[c d] 0 *[[2 3] 0 *[a 4 4 b]]]]"
 
 		local a = n1
 		local b = n2.n2.n1
@@ -433,7 +439,7 @@ local function nock(n1: Noun, n2: Noun): Result
 	--
 	-- (alternatively *[a 2 b 1 c] -> [*[a b] *[a 1 c]] -> *[*[a b] c])
 	if type(n2) == "table" and n2.n1 == 7 and type(n2.n2) == "table" then
-		print "-- *[a 7 b c] -> *[*[a b] c]"
+		dprint "-- *[a 7 b c] -> *[*[a b] c]"
 
 		local a = n1
 		local b = n2.n2.n1
@@ -448,13 +454,13 @@ local function nock(n1: Noun, n2: Noun): Result
 	-- *[a 8 b c] -> *[[*[a b] a] c]
 	-- *[a [8 [b c]]] -> *[[*[a b] a] c]
 	if type(n2) == "table" and n2.n1 == 8 and type(n2.n2) == "table" then
-		print "-- *[a 8 b c] -> *[[*[a b] a] c]"
+		dprint "-- *[a 8 b c] -> *[[*[a b] a] c]"
 
 		local a = n1
 		local b = n2.n2.n1
 		local c = n2.n2.n2
 
-		print(
+		dprint(
 			`== *[{nstring(a)} 8 {nstring(b)} {nstring(c)}] -> *[[*[{nstring(a)} {nstring(
 				b
 			)}] {nstring(a)}] {nstring(c)}]`
@@ -471,13 +477,13 @@ local function nock(n1: Noun, n2: Noun): Result
 	--
 	-- (alternatively *[a 7 c 2 [0 1] 0 b] -> *[*[a c] 2 [0 1] 0 b])
 	if type(n2) == "table" and n2.n1 == 9 and type(n2.n2) == "table" then
-		print "-- *[a 9 b c] -> *[*[a c] 2 [0 1] 0 b]"
+		dprint "-- *[a 9 b c] -> *[*[a c] 2 [0 1] 0 b]"
 
 		local a = n1
 		local b = n2.n2.n1
 		local c = n2.n2.n2
 
-		print(
+		dprint(
 			`== *[{nstring(a)} 9 {nstring(b)} {nstring(c)}] -> *[*[{nstring(a)} {nstring(
 				c
 			)}] 2 [0 1] 0 {nstring(b)}]`
@@ -497,14 +503,14 @@ local function nock(n1: Noun, n2: Noun): Result
 		and type(n2.n2) == "table"
 		and type(n2.n2.n1) == "table"
 	then
-		print "-- *[a 10 [b c] d] -> #[b *[a c] *[a d]]"
+		dprint "-- *[a 10 [b c] d] -> #[b *[a c] *[a d]]"
 
 		local a = n1
 		local b = n2.n2.n1.n1
 		local c = n2.n2.n1.n2
 		local d = n2.n2.n2
 
-		print(
+		dprint(
 			`== *[{nstring(a)} 10 [{nstring(b)} {nstring(c)}] {nstring(d)}] -> #[{nstring(
 				b
 			)} *[{nstring(a)} {nstring(c)}] *[{nstring(a)} {nstring(d)}]]`
@@ -527,14 +533,18 @@ local function nock(n1: Noun, n2: Noun): Result
 		and type(n2.n2) == "table"
 		and type(n2.n2.n1) == "table"
 	then
-		print "-- *[a 11 [b c] d] -> *[[*[a c] *[a d]] 0 3]"
+		dprint "-- *[a 11 [b c] d] -> *[[*[a c] *[a d]] 0 3]"
 
 		local a = n1
 		local b = n2.n2.n1.n1
 		local c = n2.n2.n1.n2
 		local d = n2.n2.n2
 
-		print(`== *[{nstring(a)} 11 [{nstring(b)} {nstring(c)}] {nstring(d)}] -> *[[*[{nstring(a)} {nstring(c)}] *[{nstring(a)} {nstring(d)}]] 0 3]`)
+		dprint(
+			`== *[{nstring(a)} 11 [{nstring(b)} {nstring(c)}] {nstring(d)}] -> *[[*[{nstring(
+				a
+			)} {nstring(c)}] *[{nstring(a)} {nstring(d)}]] 0 3]`
+		)
 
 		local r1 = nock(a, c)
 		if r1.fail then return r1 end
@@ -542,20 +552,23 @@ local function nock(n1: Noun, n2: Noun): Result
 		local r2 = nock(a, d)
 		if r2.fail then return r2 end
 
-
 		return nock(cell(r1.value, r2.value), cell(0, 3))
 	end
 
 	-- *[a 11 b c] -> *[a c]
 	-- *[a [11 [b c]]] -> *[a c]
 	if type(n2) == "table" and n2.n1 == 11 and type(n2.n2) == "table" then
-		print "-- *[a 11 b c] -> *[a c]"
+		dprint "-- *[a 11 b c] -> *[a c]"
 
 		local a = n1
 		local b = n2.n2.n1
 		local c = n2.n2.n2
 
-		print(`== *[{nstring(a)} 11 {nstring(b)} {nstring(c)}] -> *[{nstring(a)} {nstring(c)}]`)
+		dprint(
+			`== *[{nstring(a)} 11 {nstring(b)} {nstring(c)}] -> *[{nstring(a)} {nstring(
+				c
+			)}]`
+		)
 
 		return nock(a, c)
 	end
