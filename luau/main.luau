@@ -226,21 +226,16 @@ local function fas(n1: Noun, n2: Noun): Result
 end
 
 local function hax(n1: Noun, n2: Noun, n3: Noun): Result
+	if type(n1) ~= "number" then
+		-- #a -> #a
+		return err "#a -> #a"
+	end
+
 	-- #[1 a b] -> a
 	if n1 == 1 then
 		dprint "-- #[1 a b] -> a"
 
-		local a = n2
-
-		return ok(a)
-	end
-
-	local b = n2
-	local c = n3
-
-	if type(n1) ~= "number" then
-		-- #a -> #a
-		return err "#a -> #a"
+		return ok(n2)
 	end
 
 	-- #[(a + a) b c] -> #[a [b /[(a + a + 1) c]] c]
@@ -249,10 +244,10 @@ local function hax(n1: Noun, n2: Noun, n3: Noun): Result
 
 		local a = n1 / 2
 
-		local r2 = fas(a + a + 1, c)
+		local r2 = fas(a + a + 1, n3)
 		if r2.fail then return r2 end
 
-		return hax(a, cell(r2.value, b), c)
+		return hax(a, cell(r2.value, n2), n3)
 	end
 
 	-- #[(a + a + 1) b c] -> #[a [/[(a + a) c] b] c]
@@ -260,10 +255,10 @@ local function hax(n1: Noun, n2: Noun, n3: Noun): Result
 
 	local a = (n1 - 1) / 2
 
-	local r2 = fas(a + a, c)
+	local r2 = fas(a + a, n3)
 	if r2.fail then return r2 end
 
-	return hax(a, cell(b, r2.value), c)
+	return hax(a, cell(n2, r2.value), n3)
 end
 
 -- Reduce by the first matching pattern; variables match any noun.
@@ -288,6 +283,8 @@ local function nock(s: Noun, f: Noun): Result
 	end
 
 	local op = f.n1
+
+	if type(op) ~= "number" then return err "*a -> *a" end
 
 	-- *[a 0 b] -> /[b a]
 	-- *[a [0 b]] -> /[b a]
@@ -425,23 +422,23 @@ local function nock(s: Noun, f: Noun): Result
 		return hax(f.n2.n1.n1, r1.value, r2.value)
 	end
 
-	-- *[a 11 [b c] d] -> *[[*[a c] *[a d]] 0 3]
-	-- *[a [11 [[b c] d]]] -> *[[*[a c] *[a d]] [0 3]]
-	if op == 11 and type(f.n2) == "table" and type(f.n2.n1) == "table" then
-		dprint "-- *[a 11 [b c] d] -> *[[*[a c] *[a d]] 0 3]"
-
-		local r1 = nock(s, f.n2.n1.n2)
-		if r1.fail then return r1 end
-
-		local r2 = nock(s, f.n2.n2)
-		if r2.fail then return r2 end
-
-		return nock(cell(r1.value, r2.value), cell(0, 3))
-	end
-
-	-- *[a 11 b c] -> *[a c]
-	-- *[a [11 [b c]]] -> *[a c]
 	if op == 11 and type(f.n2) == "table" then
+		-- *[a 11 [b c] d] -> *[[*[a c] *[a d]] 0 3]
+		-- *[a [11 [[b c] d]]] -> *[[*[a c] *[a d]] [0 3]]
+		if type(f.n2.n1) == "table" then
+			dprint "-- *[a 11 [b c] d] -> *[[*[a c] *[a d]] 0 3]"
+
+			local r1 = nock(s, f.n2.n1.n2)
+			if r1.fail then return r1 end
+
+			local r2 = nock(s, f.n2.n2)
+			if r2.fail then return r2 end
+
+			return nock(cell(r1.value, r2.value), cell(0, 3))
+		end
+
+		-- *[a 11 b c] -> *[a c]
+		-- *[a [11 [b c]]] -> *[a c]
 		dprint "-- *[a 11 b c] -> *[a c]"
 
 		return nock(s, f.n2.n2)
