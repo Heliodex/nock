@@ -149,7 +149,7 @@ func stringn(s string) (Noun, error) {
 // operator functions
 // ?
 func wut(n Noun) Noun {
-	fmt.Printf("?%s\n", n)
+	// fmt.Printf("?%s\n", n)
 
 	// ?[a b] -> 0
 	if n.Cell != nil {
@@ -162,8 +162,8 @@ func wut(n Noun) Noun {
 
 // +
 func lus(n Noun) (Noun, error) {
-	fmt.Printf("+%s\n", n)
-
+	// fmt.Printf("+%s\n", n)
+	
 	// +a -> 1 + a
 	if n.Atom != nil {
 		return atom(1 + uint64(*n.Atom)), nil
@@ -175,7 +175,7 @@ func lus(n Noun) (Noun, error) {
 
 // =
 func btis(a, b Noun) bool {
-	if a.Atom != nil && b.Atom != nil {
+	if a.Atom != nil && b.Atom != nil && *a.Atom == *b.Atom {
 		return true
 	}
 
@@ -187,7 +187,7 @@ func btis(a, b Noun) bool {
 }
 
 func tis(a, b Noun) Noun {
-	fmt.Printf("=[%s %s]\n", a, b)
+	// fmt.Printf("=[%s %s]\n", a, b)
 
 	// =[a a] -> 0
 	if btis(a, b) {
@@ -200,11 +200,11 @@ func tis(a, b Noun) Noun {
 
 // /
 func fas(n1, n2 Noun) (Noun, error) {
-	fmt.Printf("/[%s %s]\n", n1, n2)
+	// fmt.Printf("/[%s %s]\n", n1, n2)
 
 	// /[1 a] -> a
 	if n1.Atom != nil && *n1.Atom == 1 {
-		fmt.Println("-- /[1 a] -> a")
+		// fmt.Println("-- /[1 a] -> a")
 
 		return n2, nil
 	}
@@ -212,7 +212,7 @@ func fas(n1, n2 Noun) (Noun, error) {
 	// /[2 a b] -> a
 	// /[2 [a b]] -> a
 	if n1.Atom != nil && *n1.Atom == 2 && n2.Cell != nil {
-		fmt.Println("-- /[2 a b] -> a")
+		// fmt.Println("-- /[2 a b] -> a")
 
 		return n2.Cell[0], nil
 	}
@@ -220,7 +220,7 @@ func fas(n1, n2 Noun) (Noun, error) {
 	// /[3 a b] -> b
 	// /[3 [a b]] -> b
 	if n1.Atom != nil && *n1.Atom == 3 && n2.Cell != nil {
-		fmt.Println("-- /[3 a b] -> b")
+		// fmt.Println("-- /[3 a b] -> b")
 
 		return n2.Cell[1], nil
 	}
@@ -244,7 +244,7 @@ func fas(n1, n2 Noun) (Noun, error) {
 
 		// /[(a + a) b] -> /[2 /[a b]]
 		if n1a%2 == 0 {
-			fmt.Println("-- /[(a + a) b] -> /[2 /[a b]]")
+			// fmt.Println("-- /[(a + a) b] -> /[2 /[a b]]")
 
 			r2, err := fas(atom(uint64(n1a)/2), n2)
 			if err != nil {
@@ -255,7 +255,7 @@ func fas(n1, n2 Noun) (Noun, error) {
 		}
 
 		// /[(a + a + 1) b] -> /[3 /[a b]]
-		fmt.Println("-- /[(a + a + 1) b] -> /[3 /[a b]]")
+		// fmt.Println("-- /[(a + a + 1) b] -> /[3 /[a b]]")
 
 		r2, err := fas(atom(uint64(n1a-1)/2), n2)
 		if err != nil {
@@ -279,14 +279,14 @@ func hax(n1, n2, n3 Noun) (Noun, error) {
 
 	// #[1 a b] -> a
 	if n1a == 1 {
-		fmt.Println("-- #[1 a b] -> a")
+		// fmt.Println("-- #[1 a b] -> a")
 
 		return n2, nil
 	}
 
 	// #[(a + a) b c] -> #[a [b /[(a + a + 1) c]] c]
 	if n1a%2 == 0 {
-		fmt.Println("-- #[(a + a) b c] -> #[a [b /[(a + a + 1) c]] c]")
+		// fmt.Println("-- #[(a + a) b c] -> #[a [b /[(a + a + 1) c]] c]")
 
 		a := uint64(n1a / 2)
 
@@ -299,7 +299,7 @@ func hax(n1, n2, n3 Noun) (Noun, error) {
 	}
 
 	// #[(a + a + 1) b c] -> #[a [/[(a + a) c] b] c]
-	fmt.Println("-- #[(a + a + 1) b c] -> #[a [/[(a + a) c] b] c]")
+	// fmt.Println("-- #[(a + a + 1) b c] -> #[a [/[(a + a) c] b] c]")
 
 	a := uint64((n1a - 1) / 2)
 
@@ -314,9 +314,9 @@ func hax(n1, n2, n3 Noun) (Noun, error) {
 // Reduce by the first matching pattern; variables match any noun.
 // nock(a) -> *a
 func nock(s, f Noun) (Noun, error) {
-	fmt.Printf("*[%s %s]\n", s, f)
+	// fmt.Printf("*[%s %s]\n", s, f)
 
-	if f.Cell != nil {
+	if f.Atom != nil {
 		return Noun{}, errors.New("*a -> *a")
 	}
 
@@ -325,7 +325,7 @@ func nock(s, f Noun) (Noun, error) {
 	// *[a [b c] d] -> [*[a b c] *[a d]]
 	// *[a [[b c] d]] -> [*[a [b c]] *[a d]]
 	if bc := fc[0].Cell; bc != nil {
-		fmt.Println("-- *[a [b c] d] -> [*[a b c] *[a d]]")
+		// fmt.Println("-- *[a [b c] d] -> [*[a b c] *[a d]]")
 
 		r1, err := nock(s, cell(bc[0], bc[1]))
 		if err != nil {
@@ -346,26 +346,25 @@ func nock(s, f Noun) (Noun, error) {
 
 	op := *fc[0].Atom
 
-	// *[a 0 b] -> /[b a]
-	// *[a [0 b]] -> /[b a]
-	if op == 0 {
-		fmt.Println("-- *[a 0 b] -> /[b a]")
+	switch {
+	case op == 0:
+		// *[a 0 b] -> /[b a]
+		// *[a [0 b]] -> /[b a]
+		// fmt.Println("-- *[a 0 b] -> /[b a]")
 
 		return fas(fc[1], s)
-	}
 
-	// *[a 1 b] -> b
-	// *[a [1 b]] -> b
-	if op == 1 {
-		fmt.Println("-- *[a 1 b] -> b")
+	case op == 1:
+		// *[a 1 b] -> b
+		// *[a [1 b]] -> b
+		// fmt.Println("-- *[a 1 b] -> b")
 
 		return fc[1], nil
-	}
 
-	// *[a 2 b c] -> *[*[a b] *[a c]]
-	// *[a [2 [b c]]] -> *[*[a b] *[a c]]
-	if op == 2 && fc[1].Cell != nil {
-		fmt.Println("-- *[a 2 b c] -> *[*[a b] *[a c]]")
+	case op == 2 && fc[1].Cell != nil:
+		// *[a 2 b c] -> *[*[a b] *[a c]]
+		// *[a [2 [b c]]] -> *[*[a b] *[a c]]
+		// fmt.Println("-- *[a 2 b c] -> *[*[a b] *[a c]]")
 
 		r1, err := nock(s, fc[1].Cell[0])
 		if err != nil {
@@ -378,12 +377,11 @@ func nock(s, f Noun) (Noun, error) {
 		}
 
 		return nock(r1, r2)
-	}
 
-	// *[a 3 b] -> ?*[a b]
-	// *[a [3 b]] -> ?*[a b]
-	if op == 3 {
-		fmt.Println("-- *[a 3 b] -> ?*[a b]")
+	case op == 3:
+		// *[a 3 b] -> ?*[a b]
+		// *[a [3 b]] -> ?*[a b]
+		// fmt.Println("-- *[a 3 b] -> ?*[a b]")
 
 		r1, err := nock(s, fc[1])
 		if err != nil {
@@ -391,12 +389,11 @@ func nock(s, f Noun) (Noun, error) {
 		}
 
 		return wut(r1), nil
-	}
 
-	// *[a 4 b] -> +*[a b]
-	// *[a [4 b]] -> +*[a b]
-	if op == 4 {
-		fmt.Println("-- *[a 4 b] -> +*[a b]")
+	case op == 4:
+		// *[a 4 b] -> +*[a b]
+		// *[a [4 b]] -> +*[a b]
+		// fmt.Println("-- *[a 4 b] -> +*[a b]")
 
 		r1, err := nock(s, fc[1])
 		if err != nil {
@@ -404,12 +401,11 @@ func nock(s, f Noun) (Noun, error) {
 		}
 
 		return lus(r1)
-	}
 
-	// [a 5 b c] -> =[*[a b] *[a c]]
-	// [a [5 [b c]]] -> =[*[a b] *[a c]]
-	if op == 5 && fc[1].Cell != nil {
-		fmt.Println("-- *[a 5 b c] -> =[*[a b] *[a c]]")
+	case op == 5 && fc[1].Cell != nil:
+		// [a 5 b c] -> =[*[a b] *[a c]]
+		// [a [5 [b c]]] -> =[*[a b] *[a c]]
+		// fmt.Println("-- *[a 5 b c] -> =[*[a b] *[a c]]")
 
 		r1, err := nock(s, fc[1].Cell[0])
 		if err != nil {
@@ -422,14 +418,13 @@ func nock(s, f Noun) (Noun, error) {
 		}
 
 		return tis(r1, r2), nil
-	}
 
 	// macro time
 
-	// *[a 6 b c d] -> *[a *[[c d] 0 *[[2 3] 0 *[a 4 4 b]]]]
-	// *[a [6 [b [c d]]]] -> *[a *[[c d] [0 *[[2 3] [0 *[a [4 [4 b]]]]]]]]
-	if op == 6 && fc[1].Cell != nil && fc[1].Cell[1].Cell != nil {
-		fmt.Println("-- *[a 6 b c d] -> *[a *[[c d] 0 *[[2 3] 0 *[a 4 4 b]]]]")
+	case op == 6 && fc[1].Cell != nil && fc[1].Cell[1].Cell != nil:
+		// *[a 6 b c d] -> *[a *[[c d] 0 *[[2 3] 0 *[a 4 4 b]]]]
+		// *[a [6 [b [c d]]]] -> *[a *[[c d] [0 *[[2 3] [0 *[a [4 [4 b]]]]]]]]
+		// fmt.Println("-- *[a 6 b c d] -> *[a *[[c d] 0 *[[2 3] 0 *[a 4 4 b]]]]")
 
 		r1, err := nock(s, cell(atom(4), cell(atom(4), fc[1].Cell[0])))
 		if err != nil {
@@ -447,6 +442,88 @@ func nock(s, f Noun) (Noun, error) {
 		}
 
 		return nock(s, r3)
+
+	case op == 7 && fc[1].Cell != nil:
+		// *[a 7 b c] -> *[*[a b] c]
+		// *[a [7 [b c]]] -> *[*[a b] c]
+		//
+		// (alternatively *[a 2 b 1 c] -> [*[a b] *[a 1 c]] -> *[*[a b] c])
+		// fmt.Println("-- *[a 7 b c] -> *[*[a b] c]")
+
+		r1, err := nock(s, fc[1].Cell[0])
+		if err != nil {
+			return Noun{}, err
+		}
+
+		return nock(r1, fc[1].Cell[1])
+
+	case op == 8 && fc[1].Cell != nil:
+		// *[a 8 b c] -> *[[*[a b] a] c]
+		// *[a [8 [b c]]] -> *[[*[a b] a] c]
+		// fmt.Println("-- *[a 8 b c] -> *[[*[a b] a] c]")
+
+		r1, err := nock(s, fc[1].Cell[0])
+		if err != nil {
+			return Noun{}, err
+		}
+
+		return nock(cell(r1, s), fc[1].Cell[1])
+
+	case op == 9 && fc[1].Cell != nil:
+		// *[a 9 b c] -> *[*[a c] 2 [0 1] 0 b]
+		// *[a [9 [b c]]] -> *[*[a c] [2 [[0 1] [0 b]]]]
+		//
+		// (alternatively *[a 7 c 2 [0 1] 0 b] -> *[*[a c] 2 [0 1] 0 b])
+		// fmt.Println("-- *[a 9 b c] -> *[*[a c] 2 [0 1] 0 b]")
+
+		r1, err := nock(s, fc[1].Cell[1])
+		if err != nil {
+			return Noun{}, err
+		}
+
+		return nock(r1, cell(atom(2), cell(cell(atom(0), atom(1)), cell(atom(0), fc[1].Cell[0]))))
+
+	case op == 10 && fc[1].Cell != nil:
+		// *[a 10 [b c] d] -> #[b *[a c] *[a d]]
+		// *[a [10 [[b c] d]]] -> #[b [*[a c] *[a d]]]
+		// fmt.Println("-- *[a 10 [b c] d] -> #[b *[a c] *[a d]]")
+
+		r1, err := nock(s, fc[1].Cell[0].Cell[1])
+		if err != nil {
+			return Noun{}, err
+		}
+
+		r2, err := nock(s, fc[1].Cell[1])
+		if err != nil {
+			return Noun{}, err
+		}
+
+		return hax(fc[1].Cell[0].Cell[0], r1, r2)
+
+	case op == 11 && fc[1].Cell != nil:
+		// *[a 11 b c] -> *[a c]
+		// *[a [11 [b c]]] -> *[a c]
+		if fc[1].Cell[0].Atom != nil {
+			// fmt.Println("-- *[a 11 b c] -> *[a c]")
+
+			return nock(s, fc[1].Cell[1])
+		}
+
+		// *[a 11 [b c] d] -> *[[*[a c] *[a d]] 0 3]
+		// *[a [11 [[b c] d]]] -> *[[*[a c] *[a d]] [0 3]]
+		// fmt.Println("-- *[a 11 [b c] d] -> *[[*[a c] *[a d]] 0 3]")
+
+		r1, err := nock(s, fc[1].Cell[0].Cell[1])
+		if err != nil {
+			return Noun{}, err
+		}
+
+		r2, err := nock(s, fc[1].Cell[1])
+		if err != nil {
+			return Noun{}, err
+		}
+
+		return nock(cell(r1, r2), cell(atom(0), atom(3)))
 	}
 
 	// *a -> *a

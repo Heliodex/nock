@@ -402,10 +402,10 @@ for i, test in tests do
 	else
 		dprint "FAIL"
 
-		if test.output and res.fail then
+		if res.fail and test.output then
 			dprint("expected output", test.output)
 			dprint("got failure    ", res.err)
-		elseif test.err and not res.fail then
+		elseif not res.fail and test.err then
 			dprint("expected failure", test.err)
 			dprint("got output      ", nstring(res.value))
 		else
