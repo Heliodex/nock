@@ -42,37 +42,14 @@ local function nstring(n: Noun): string
 end
 
 -- [a b c] -> [a [b c]]
-local function stringn(s: string): Result
-	local n = tonumber(s)
-	if n and n >= 0 and math.floor(n) == n then return ok(n) end
+local stringn
 
-	-- [a b] -> cell(a, b)
-	local chars = string.split(s, "")
-
-	if chars[1] ~= "[" or chars[#chars] ~= "]" then
-		return err "not cell or atom"
-	end
-
-	if #chars == 2 then return err "empty cell" end
-
-	table.remove(chars, 1)
-	table.remove(chars, #chars)
-
-	local spacecount = 0
-	for _, c in chars do
-		if c == " " then
-			spacecount += 1
-		end
-	end
-
-	if spacecount == 0 then return err "1 element in cell" end
-
+local function stringcell(chars: { string }): Result
 	local current = {}
 	local ns: { Noun } = {}
 	local depth = 0
 
-	for i = 1, #chars do
-		local c = chars[i]
+	for _, c in chars do
 		if c == "[" then
 			depth += 1
 		elseif c == "]" then
@@ -111,10 +88,38 @@ local function stringn(s: string): Result
 		sns[i] = nstring(v)
 	end
 
-	local res = stringn(`[{table.concat(sns, " ")}]`)
+	local res = stringcell(string.split(table.concat(sns, " "), ""))
 	if res.fail then return res end
 
 	return ok(cell(ns1, res.value))
+end
+
+function stringn(s: string): Result
+	local n = tonumber(s)
+	if n and n >= 0 and math.floor(n) == n then return ok(n) end
+
+	-- [a b] -> cell(a, b)
+	local chars = string.split(s, "")
+
+	if chars[1] ~= "[" or chars[#s] ~= "]" then
+		return err "not cell or atom"
+	end
+
+	if #chars == 2 then return err "empty cell" end
+
+	table.remove(chars, 1)
+	table.remove(chars, #chars)
+
+	local spacecount = 0
+	for _, c in chars do
+		if c == " " then
+			spacecount += 1
+		end
+	end
+
+	if spacecount == 0 then return err "1 element in cell" end
+
+	return stringcell(chars)
 end
 
 -- operator functions
@@ -132,7 +137,6 @@ end
 -- +
 local function lus(n: Noun): Result
 	-- dprint(`+{nstring(n)}`)
-	-- error "waht"
 
 	-- +a -> 1 + a
 	if type(n) == "number" then return ok(1 + n) end
@@ -195,12 +199,8 @@ local function fas(n1: Noun, n2: Noun): Result
 	-- /[(a + a + 1) b] -> /[3 /[a b]]
 	if type(n1) == "number" then
 		if n1 == 0 then return err "/[0 a] -> /[2 /[0 a]]" end
-		if n1 == 2 and type(n2) == "number" then
-			return err "/[2 n] -> /[2 /[1 n]] -> /[2 n]"
-		end
-		if n1 == 3 and type(n2) == "number" then
-			return err "/[3 n] -> /[3 /[1 n]] -> /[3 n]"
-		end
+		if n1 == 2 then return err "/[2 a] -> /[2 /[1 a]] -> /[2 a]" end
+		if n1 == 3 then return err "/[3 a] -> /[3 /[1 a]] -> /[3 a]" end
 
 		-- /[(a + a) b] -> /[2 /[a b]]
 		if n1 % 2 == 0 then
@@ -210,16 +210,15 @@ local function fas(n1: Noun, n2: Noun): Result
 			if r2.fail then return r2 end
 
 			return fas(2, r2.value)
+		end
 
 		-- /[(a + a + 1) b] -> /[3 /[a b]]
-		else
-			dprint "-- /[(a + a + 1) b] -> /[3 /[a b]]"
+		dprint "-- /[(a + a + 1) b] -> /[3 /[a b]]"
 
-			local r2 = fas((n1 - 1) / 2, n2)
-			if r2.fail then return r2 end
+		local r2 = fas((n1 - 1) / 2, n2)
+		if r2.fail then return r2 end
 
-			return fas(3, r2.value)
-		end
+		return fas(3, r2.value)
 	end
 
 	-- /a -> /a
@@ -255,7 +254,7 @@ local function hax(n1: Noun, n2: Noun, n3: Noun): Result
 
 		return hax(a, cell(r2.value, b), c)
 	end
-	
+
 	-- #[(a + a + 1) b c] -> #[a [/[(a + a) c] b] c]
 	dprint "-- #[(a + a + 1) b c] -> #[a [/[(a + a) c] b] c]"
 

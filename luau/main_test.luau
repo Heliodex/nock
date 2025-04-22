@@ -33,6 +33,11 @@ local tests: { Test } = {
 
 	-- opcode 0
 	{
+		subject = "2",
+		formula = "[0 3]",
+		err = "/[3 a] -> /[3 /[1 a]] -> /[3 a]",
+	},
+	{
 		subject = "[[4 5] [6 14 15]]",
 		formula = "[0 1]",
 		output = "[[4 5] [6 [14 15]]]",
@@ -70,7 +75,7 @@ local tests: { Test } = {
 	{
 		subject = "[[4 5] [6 14 15]]",
 		formula = "[0 10]",
-		err = "/[2 n] -> /[2 /[1 n]] -> /[2 n]",
+		err = "/[2 a] -> /[2 /[1 a]] -> /[2 a]",
 	},
 	{
 		subject = "[[4 5] [6 14 15]]",
@@ -247,7 +252,7 @@ local tests: { Test } = {
 	{
 		subject = "42",
 		formula = "[6 [1 2] [1 232] [1 233]]",
-		err = "/[2 n] -> /[2 /[1 n]] -> /[2 n]",
+		err = "/[2 a] -> /[2 /[1 a]] -> /[2 a]",
 	},
 
 	-- opcode 7
