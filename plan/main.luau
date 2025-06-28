@@ -31,7 +31,7 @@ type PLAN = Pin<PLAN> | Law<PLAN, PLAN, PLAN> | App<PLAN, PLAN> | Nat | BlackHol
 -- Unmatched patterns diverge.
 -- Run F[x] to normalize a value, to "evaluate".
 
-local B, E, F, P, N, A, L, W
+local B, E1, E2, F, P, N, A, L, W
 
 -- C (reCursion on naturals)
 local function C(z: PLAN, p: PLAN, n: PLAN): PLAN
@@ -53,10 +53,12 @@ local function S(o: PLAN): PLAN
 
 		return app(S(app(f, x)), y)
 	end
+	o = o :: PLAN
 	-- S[o:(<{n a b}> y)] = o
 	if o.tag == "app" and o.f.tag == "pin" and o.f.i.tag == "law" then
 		return o
 	end
+	o = o :: PLAN
 	-- S[o:(<f> x)]       = S[(f x)]
 	if o.tag == "app" and o.f.tag == "pin" then
 		local to: App<Pin<PLAN>, PLAN> = o
@@ -66,12 +68,13 @@ local function S(o: PLAN): PLAN
 
 		return S(app(f, x))
 	end
+	o = o :: PLAN
 	-- S[o]               = o
 	return o
 end
 
 -- I (index
-local function I(f: PLAN, e: PLAN, n: PLAN): PLAN
+local function I(f: PLAN, e: PLAN, n: Nat): PLAN
 	-- I(f, (e x), 0) = x
 	if e.tag == "app" and n.tag == "nat" and n._ == 0 then
 		local te: App<PLAN, PLAN> = e
@@ -97,9 +100,10 @@ end
 -- R (Run a law)
 local function R(n: PLAN, e: PLAN, a: PLAN): PLAN
 	-- 	R(n,e,b:@) | b≤n = I(b,e,(n-b))         # if b=0 Self, otherwise Var b
-	if a.tag == "nat" and N(a)._ <= n._ then
+	if a.tag == "nat" and a._ <= N(n)._ then
 		return I(a, e, nat(N(n)._ - a._))
 	end
+	a = a :: PLAN
 	-- R(n,e,(0 f x))   = (R(n,e,f) R(n,e,x))  # Apply f x
 	if
 		a.tag == "app"
@@ -114,6 +118,7 @@ local function R(n: PLAN, e: PLAN, a: PLAN): PLAN
 
 		return app(R(n, e, f), R(n, e, x))
 	end
+	a = a :: PLAN
 	-- R(n,e,(1 v b))   = L(n,e,v,b)           # let v in b
 	if
 		a.tag == "app"
@@ -128,14 +133,14 @@ local function R(n: PLAN, e: PLAN, a: PLAN): PLAN
 
 		return L(n, e, v, b)
 	end
+	a = a :: PLAN
 	-- R(n,e,(2 x))     = x                    # Literal x
 	if a.tag == "app" and a.f.tag == "nat" and a.f._ == 2 then
-		local ta: App<Nat, PLAN> = a
-
-		local x = ta.g
+		local x = a.g
 
 		return x
 	end
+	a = a :: PLAN
 	-- R(n,e,x)         = x                    # Literal x (fallback, incl b>n)
 	return a
 end
@@ -177,7 +182,7 @@ local function X(f: PLAN, e: PLAN): PLAN
 		local n = te.f.g
 		local x = te.g
 
-		return P(p, l, a, n, E(x))
+		return P(p, l, a, n, E1(x))
 	end
 	-- X[2, (_ z p x)]     = C[z,p,N[x]]
 	if
@@ -253,14 +258,16 @@ function B(a: PLAN, n: PLAN, e: PLAN, b: PLAN, x: PLAN): PLAN
 
 		local k = tx.g
 
-		return B(a, inc(N(n)), app(e, blackhole()), b, k)
+		local eb = app(e, blackhole()) :: App<PLAN, PLAN>
+
+		return B(a, inc(N(n)), eb, b, k)
 	end
 	-- B[a,n,e,b,x]       = L[a,n,e,b]
 	return L(a, n, e, b)
 end
 
 -- E (Evaluate)
-function E(o: PLAN): PLAN
+function E1(o: PLAN): PLAN
 	-- 	E(o:@)     = o
 	if o.tag == "nat" then return o end
 	-- E(o:<x>)   = o
@@ -276,12 +283,12 @@ function E(o: PLAN): PLAN
 
 		local f = to.f
 
-		E(f)
+		E1(f)
 
 		local af = A(f)
 		if af.tag == "nat" and af._ == 1 then
 			o = X(o, o)
-			E(o)
+			E1(o)
 		end
 
 		return o
@@ -300,10 +307,26 @@ function E(o: PLAN): PLAN
 		if a.tag ~= "nat" or a._ ~= 0 then return o end
 		o = blackhole()
 		o = R(nat(0), o, b)
-		return E(o)
+		return E1(o)
 	end
 
 	error(`unmatched pattern in E: {o}`)
+end
+
+function E2(o: PLAN): PLAN
+	if o.tag == "app" then
+		local f = o.f
+
+		E2(f)
+		local af = A(f)
+		if af.tag == "nat" and af._ == 1 then
+			o = S(o)
+			o = X(o, o)
+			E2(o)
+		end
+	end
+
+	return o
 end
 
 -- F (Force normalize)
@@ -313,7 +336,7 @@ function F(o: PLAN): PLAN
 	--     when o:(f x)
 	--          F(f); F(x)
 	--     o
-	E(o)
+	E1(o)
 
 	if o.tag == "app" then
 		local to: App<PLAN, PLAN> = o
@@ -329,7 +352,7 @@ function F(o: PLAN): PLAN
 end
 
 -- P (Pattern match)
-function P(p: PLAN, l: PLAN, a: PLAN, n: PLAN, x: PLAN): PLAN
+function P(p: PLAN, l: PLAN, a: PLAN, n: PLAN, x: PLAN): App<PLAN, PLAN>
 	-- P(p,l,a,n,(f x))   = (a f x)
 	if x.tag == "app" then
 		local tx: App<PLAN, PLAN> = x
@@ -337,7 +360,8 @@ function P(p: PLAN, l: PLAN, a: PLAN, n: PLAN, x: PLAN): PLAN
 		local xf = tx.f
 		local xx = tx.g
 
-		return app(app(a, xf), xx)
+		local r = app(app(a, xf), xx) :: App<PLAN, PLAN>
+		return r
 	end
 	-- P(p,l,a,n,<x>)     = (p x)
 	if x.tag == "pin" then
@@ -355,10 +379,14 @@ function P(p: PLAN, l: PLAN, a: PLAN, n: PLAN, x: PLAN): PLAN
 		local xa = tx.a
 		local xb = tx.b
 
-		return app(app(app(l, xn), xa), xb)
+		local r = app(app(app(l, xn), xa), xb) :: App<PLAN, PLAN>
+		return r
 	end
 	-- P(p,l,a,n,x:@}     = (n x)
-	if x.tag == "nat" then return app(n, x) end
+	if x.tag == "nat" then
+		local r = app(n, x) :: App<PLAN, PLAN>
+		return r
+	end
 
 	error(`unmatched pattern in P: {p} {l} {a} {n} {x}`)
 end
@@ -366,7 +394,7 @@ end
 -- N (cast to Nat)
 function N(o: PLAN): Nat
 	-- N(o) = E(o); if o:@ then o else 0
-	E(o)
+	E1(o)
 
 	if o.tag == "nat" then return o end
 	return nat(0)
@@ -386,21 +414,22 @@ function A(f: PLAN): PLAN
 	if f.tag == "pin" then
 		local tf: Pin<PLAN> = f
 
-		local p = tf.i
+		local fp = tf.i
 
-		return A(p)
+		return A(fp)
 	end
 	-- A({n a b})   = a
 	if f.tag == "law" then
 		local tf: Law<PLAN, PLAN, PLAN> = f
 
-		local a = tf.a
+		local fa = tf.a
 
-		return a
+		return fa
 	end
 	-- A(n:@)       = I(1, (3 5 3), n)
 	if f.tag == "nat" then
-		return I(nat(1), app(app(nat(3), nat(5)), nat(3)), f)
+		local n353 = app(app(nat(3), nat(5)), nat(3)) :: App<PLAN, PLAN>
+		return I(nat(1), n353, f)
 	end
 
 	error(`unmatched pattern in A: {f}`)
@@ -415,9 +444,10 @@ function L(n: PLAN, e: PLAN, v: PLAN, b: PLAN): PLAN
 	--     R(n+1,f,b)
 	local x = blackhole()
 	local n1 = inc(N(n))
-	local f = app(e, x)
+	local f = app(e, x) :: App<PLAN, PLAN>
 	x = R(n1, f, v)
-	return R(n1, f, b)
+	local r = R(n1, f, b)
+	return r
 end
 
 -- W (Write law)
