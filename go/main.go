@@ -163,7 +163,7 @@ func wut(n Noun) Noun {
 // +
 func lus(n Noun) (Noun, error) {
 	// fmt.Printf("+%s\n", n)
-	
+
 	// +a -> 1 + a
 	if n.Atom != nil {
 		return atom(1 + uint64(*n.Atom)), nil
