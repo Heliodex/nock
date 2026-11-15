@@ -389,7 +389,6 @@ func TestNock(t *testing.T) {
 				t.Fatal("invalid test")
 			}
 		}
-
 		fmt.Println("PASS")
 	}
 }
